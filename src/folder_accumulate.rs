@@ -50,14 +50,14 @@ pub fn run_cli() -> Result<()> {
 
 fn organize_files(args: Args) -> Result<(), anyhow::Error> {
     match args.recursive {
-        true => recursive_directory_organize(args),
-        false => flat_directory_organize(args),
+        true => recursive_directory_organize(&args),
+        false => flat_directory_organize(&args),
     }
 }
 
 
-fn flat_directory_organize(args: Args) -> Result<(), anyhow::Error> {
-  let paths = fs::read_dir(args.directory).unwrap();
+fn flat_directory_organize(args: & Args) -> Result<(), anyhow::Error> {
+  let paths = fs::read_dir(args.directory.clone()).unwrap();
   let options = CopyOptions::new();
   // Iterate through paths and record date folders to be made
 
@@ -74,18 +74,14 @@ fn flat_directory_organize(args: Args) -> Result<(), anyhow::Error> {
     if file_name.as_str() == ".DS_Store" {
       continue;
     }
-    println!("Name: {}", dir_entry.path().display());
 
     let parent = String::from(dir_entry.path().parent().unwrap().as_os_str().to_str().unwrap());
-    println!("parent {}", parent);
 
     let created_at = dir_entry.path().metadata().unwrap().created().unwrap();
     let created_at: DateTime<Utc> = created_at.into();
     let created_at = created_at.format("%Y-%m-%d").to_string();
-    println!("created_at {}", created_at);
 
     let new_parent = Path::new(&parent).join(created_at);
-    println!("new_parent {:?}", new_parent);
 
     if !new_parent.exists() {
       if let Err(err) = fs::create_dir(new_parent.clone()) {
@@ -94,18 +90,17 @@ fn flat_directory_organize(args: Args) -> Result<(), anyhow::Error> {
     }
 
     let new_path = new_parent.join(&file_name);
-    println!("new_path {:?}", new_path);
 
     if let Err(err) =  move_file(dir_entry.path(), new_path, &options) {
       return Err(anyhow!("move_file err: {}", err));
     }
 
   }
-
+  println!("** Success!  Files in \"{}\" accumulated to their datewise folder.  **", args.directory);
   anyhow::Ok(())
 }
 
 
-fn recursive_directory_organize(_args: Args) -> Result<()>  {
+fn recursive_directory_organize(_args: & Args) -> Result<()>  {
   todo!()
 }
