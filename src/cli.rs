@@ -1,4 +1,5 @@
 use crate::prepend_date;
+use crate::folder_accumulate;
 use crate::utils::string_to_args;
 use anyhow::{Context, Result};
 use clap::Parser;
@@ -7,6 +8,7 @@ use clap::Parser;
 enum Function {
     HelloWorld,
     PrependDate,
+    FolderAccumulate,
 }
 
 #[derive(Parser, Debug)]
@@ -33,22 +35,22 @@ fn read_commands() -> Result<Args> {
     }
 }
 
-pub fn run_cli() -> Result<()> {
+pub fn run_cli() -> Result<(), anyhow::Error> {
     // if we want to read from executable invocation
     //let mut args = Args::parse();
 
-    println!("Photorio: Enter function, run -h for help");
+    println!("* Vishvakarman: Enter function, run -h for help *");
     let mut args = read_commands()?;
     while !args.quit {
         cli_execute(args).with_context(|| "command execution error".to_string())?;
 
-        println!("Photorio: Run another command, enter '-q' to quit");
+        println!("** Vishvakarman: Run another command, enter '-q' to quit **");
         args = read_commands()?;
     }
     anyhow::Ok(())
 }
 
-fn cli_execute(args: Args) -> Result<()> {
+fn cli_execute(args: Args) -> Result<(), anyhow::Error> {
     match args.function {
         Function::HelloWorld => {
             println!("Hello World");
@@ -56,6 +58,9 @@ fn cli_execute(args: Args) -> Result<()> {
         Function::PrependDate => {
             prepend_date::run_cli().with_context(|| "prepend_date execution error".to_string())?;
         }
+        Function::FolderAccumulate => {
+            folder_accumulate::run_cli().with_context(|| "folder accumulate execution error".to_string())?;
+        },
     }
     anyhow::Ok(())
 }

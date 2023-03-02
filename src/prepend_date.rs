@@ -48,7 +48,7 @@ pub fn run_cli() -> Result<()> {
     anyhow::Ok(())
 }
 
-fn prepend_date(args: Args) -> Result<()> {
+fn prepend_date(args: Args) -> Result<(), anyhow::Error> {
     let target = match args.target {
         Target::Files => "files",
         Target::Directories => "directories",
