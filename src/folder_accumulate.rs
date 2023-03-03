@@ -3,16 +3,26 @@ use anyhow::{Context, Result, anyhow};
 use clap::Parser;
 use std::{fs, fs::DirEntry, path::Path};
 use chrono::prelude::{DateTime, Utc};
-use fs_extra::file::{move_file, CopyOptions};
+use std::io;
+use std::io::Write; // <--- bring flush() into scope
 
-const UTILITY_FUNCTION_NAME: & str = "Folder Accumulate";
+const  UTILITY_FUNCTION_NAME: & str = "Folder Accumulate";
+const EXCLUDED_FILES: [&str; 2] = ["vishvakarman.exe", ".DS_Store"];
+
+#[derive(clap::ValueEnum, Clone, Debug)]
+enum AccumulateType {
+  CreatedAtDate,
+  ModifiedAtDate
+}
 
 #[derive(Parser, Debug)]
 struct Args {
     #[clap(value_enum, long, short, value_parser, default_value = "./")]
     directory: String,
 
-    /// set to true to quit
+    #[clap(value_enum, long, short, value_parser, default_value_t = AccumulateType::ModifiedAtDate)]
+    accumulate_type: AccumulateType,
+
     #[clap(long, short, value_parser, default_value_t = false)]
     recursive: bool,
 
@@ -55,14 +65,18 @@ fn organize_files(args: Args) -> Result<(), anyhow::Error> {
         false => flat_directory_organize(&args),
     };
     match res {
-      Ok(_) =>  println!("** Success!  Files in \"{}\" accumulated to their date wise folders.  **", args.directory),
-      Err(err) => println!("** Error Making Folders Failed! {}", err),
+      Ok(_) =>  println!("\n*** Success!  Files in \"{}\" accumulated to their date wise folders. ***", args.directory),
+      Err(err) => println!("*** Error Making Folders Failed! {}", err),
     }
     Ok(())
 }
 
-fn get_created_at(dir_entry: &DirEntry) -> Result<String, anyhow::Error> {
-  let created_at = dir_entry.path().metadata().unwrap().created().unwrap();
+fn get_accumulated_date(dir_entry: &DirEntry, args: & Args) -> Result<String, anyhow::Error> {
+
+  let created_at = match args.accumulate_type {
+    AccumulateType::CreatedAtDate => dir_entry.path().metadata().unwrap().created().unwrap(),
+    AccumulateType::ModifiedAtDate => dir_entry.path().metadata().unwrap().modified().unwrap(),
+  };
   let created_at: DateTime<Utc> = created_at.into();
   let created_at = created_at.format("%Y-%m-%d").to_string();
 
@@ -71,27 +85,28 @@ fn get_created_at(dir_entry: &DirEntry) -> Result<String, anyhow::Error> {
 
 
 fn flat_directory_organize(args: & Args) -> Result<(), anyhow::Error> {
-  let options = CopyOptions::new();
-
   // Iterate through paths and move folders to date folders
   let paths = fs::read_dir(args.directory.clone()).unwrap();
   for dir_entry in paths.flatten() {
-
+    
     if dir_entry.path().is_dir() {
       continue;
     }
     let file_name = String::from(dir_entry.path().file_name().unwrap().to_str().unwrap());
     // Mac Specific file elimination
-    if file_name.as_str() == ".DS_Store" {
+    if EXCLUDED_FILES.contains(&file_name.as_str()) {
       continue;
     }
 
-    let created_at = get_created_at(&dir_entry)?;
+    let created_at = get_accumulated_date(&dir_entry, args)?;
 
     let parent = String::from(dir_entry.path().parent().unwrap().as_os_str().to_str().unwrap());
     let new_parent = Path::new(&parent).join(created_at);
 
     if !new_parent.exists() {
+
+      print!("\n*** Creating and moving folders into : {}", new_parent.as_os_str().to_str().unwrap());
+      io::stdout().flush().unwrap();
       if let Err(err) = fs::create_dir(new_parent.clone()) {
         return Err(anyhow!("create_dir err: {}", err));
       }
@@ -99,18 +114,17 @@ fn flat_directory_organize(args: & Args) -> Result<(), anyhow::Error> {
 
     let new_path = new_parent.join(&file_name);
 
-    if let Err(err) =  move_file(dir_entry.path(), new_path, &options) {
-      return Err(anyhow!("move_file err: {}", err));
+    if let Err(err) =  fs::rename(dir_entry.path(), new_path) {
+      return Err(anyhow!("rename file err: {}", err));
     }
-
+    print!(".");
+    io::stdout().flush().unwrap();
   }
   anyhow::Ok(())
 }
 
 
 fn recursive_directory_organize(args: & Args) -> Result<(), anyhow::Error>  {
-  let options = CopyOptions::new();
-
   // Iterate through paths and move folders to date folders
   let paths = fs::read_dir(args.directory.clone()).unwrap();
   for dir_entry in paths.flatten() {
@@ -118,8 +132,10 @@ fn recursive_directory_organize(args: & Args) -> Result<(), anyhow::Error>  {
       continue;
     }
 
-    let orig_dir_name = String::from(dir_entry.path().file_name().unwrap().to_str().unwrap());
     let parent = String::from(dir_entry.path().parent().unwrap().as_os_str().to_str().unwrap());
+    let orig_dir_name = String::from(dir_entry.path().file_name().unwrap().to_str().unwrap());
+    print!("\n*** Creating and Moving directories for : {}", orig_dir_name);
+    io::stdout().flush().unwrap();
 
     let sub_dir_paths = fs::read_dir(dir_entry.path()).unwrap();
     for de in sub_dir_paths.flatten() {
@@ -129,12 +145,12 @@ fn recursive_directory_organize(args: & Args) -> Result<(), anyhow::Error>  {
 
       let file_name = String::from(de.path().file_name().unwrap().to_str().unwrap());
       // Mac Specific file elimination
-      if file_name.as_str() == ".DS_Store" {
+      if EXCLUDED_FILES.contains(&file_name.as_str()) {
         continue;
       }
 
-      let created_at = get_created_at(&de)?;
-      let new_parent = Path::new(&parent).join(format!("{} - {}", created_at, orig_dir_name));
+      let created_at = get_accumulated_date(&de, args)?;
+      let new_parent = Path::new(&parent).join(format!("{} {}", created_at, orig_dir_name));
 
       if !new_parent.exists() {
         if let Err(err) = fs::create_dir(new_parent.clone()) {
@@ -143,9 +159,11 @@ fn recursive_directory_organize(args: & Args) -> Result<(), anyhow::Error>  {
       }
 
       let new_path = new_parent.join(&file_name);
-      if let Err(err) =  move_file(de.path(), new_path, &options) {
-        return Err(anyhow!("move_file err: {}", err));
+      if let Err(err) =  fs::rename(de.path(), new_path) {
+        return Err(anyhow!("rename file err: {}", err));
       }
+      print!(".");
+      io::stdout().flush().unwrap();
     }
     if let Err(err) = fs::remove_dir(dir_entry.path()) {
       return Err(anyhow!("remove_dir err: {}", err));

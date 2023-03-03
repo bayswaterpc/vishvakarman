@@ -14,7 +14,7 @@ enum Function {
 #[derive(Parser, Debug)]
 pub struct Args {
     /// enum for supported http request
-    #[clap(value_enum, long, short, value_parser, default_value_t=Function::HelloWorld)]
+    #[clap(value_enum, long, short, value_parser, default_value_t=Function::FolderAccumulate)]
     function: Function,
 
     /// set to true to quit
@@ -40,6 +40,7 @@ pub fn run_cli() -> Result<(), anyhow::Error> {
     //let mut args = Args::parse();
 
     println!("* Vishvakarman: Enter function, run -h for help *");
+    println!("** Default \"folder-accumulate\" **");
     let mut args = read_commands()?;
     while !args.quit {
         cli_execute(args).with_context(|| "command execution error".to_string())?;
