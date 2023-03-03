@@ -5,6 +5,7 @@ use std::{fs, fs::DirEntry, path::Path};
 use chrono::prelude::{DateTime, Utc};
 use std::io;
 use std::io::Write; // <--- bring flush() into scope
+use std::collections::HashSet;
 
 const  UTILITY_FUNCTION_NAME: & str = "Folder Accumulate";
 const EXCLUDED_FILES: [&str; 2] = ["vishvakarman.exe", ".DS_Store"];
@@ -125,6 +126,7 @@ fn flat_directory_organize(args: & Args) -> Result<(), anyhow::Error> {
 
 
 fn recursive_directory_organize(args: & Args) -> Result<(), anyhow::Error>  {
+  let mut visited_paths = HashSet::new();
   // Iterate through paths and move folders to date folders
   let paths = fs::read_dir(args.directory.clone()).unwrap();
   for dir_entry in paths.flatten() {
@@ -134,6 +136,11 @@ fn recursive_directory_organize(args: & Args) -> Result<(), anyhow::Error>  {
 
     let parent = String::from(dir_entry.path().parent().unwrap().as_os_str().to_str().unwrap());
     let orig_dir_name = String::from(dir_entry.path().file_name().unwrap().to_str().unwrap());
+    println!("\norig_dir_name {}", orig_dir_name);
+    println!("visited_paths {:?}", visited_paths);
+    if visited_paths.contains(&orig_dir_name) {
+      continue;
+    }
     print!("\n*** Creating and Moving directories for : {}", orig_dir_name);
     io::stdout().flush().unwrap();
 
@@ -150,8 +157,9 @@ fn recursive_directory_organize(args: & Args) -> Result<(), anyhow::Error>  {
       }
 
       let created_at = get_accumulated_date(&de, args)?;
-      let new_parent = Path::new(&parent).join(format!("{} {}", created_at, orig_dir_name));
-
+      let new_dir_name = format!("{} {}", created_at, orig_dir_name);
+      visited_paths.insert(new_dir_name.clone());
+      let new_parent = Path::new(&parent).join(new_dir_name);
       if !new_parent.exists() {
         if let Err(err) = fs::create_dir(new_parent.clone()) {
           return Err(anyhow!("create_dir err: {}", err));
