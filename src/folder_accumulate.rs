@@ -1,5 +1,5 @@
 use crate::utils::string_to_args;
-use anyhow::{Context, Result, anyhow};
+use eyre::{Result, WrapErr, eyre};
 use clap::Parser;
 use std::{fs, fs::DirEntry, path::Path};
 use chrono::prelude::{DateTime, Utc};
@@ -55,15 +55,15 @@ pub fn run_cli() -> Result<()> {
     println!("*** Enter directory and recursive options, run -h for more help ***");
     let mut args = read_commands()?;
     while !args.back {
-        organize_files(args).with_context(|| "Move Files Into Created By Date Folders".to_string())?;
+        organize_files(args).wrap_err("Move Files Into Created By Date Folders".to_string())?;
         println!("*** {}: Run again or enter '-b' to go back ***", UTILITY_FUNCTION_NAME);
         args = read_commands()?;
     }
 
-    anyhow::Ok(())
+    Ok(())
 }
 
-fn organize_files(args: Args) -> Result<(), anyhow::Error> {
+fn organize_files(args: Args) -> Result<()> {
     let res = match args.recursive {
         true => recursive_directory_organize(&args),
         false => flat_directory_organize(&args),
@@ -75,7 +75,7 @@ fn organize_files(args: Args) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-fn get_accumulated_date(dir_entry: &DirEntry, args: & Args) -> Result<String, anyhow::Error> {
+fn get_accumulated_date(dir_entry: &DirEntry, args: & Args) -> Result<String> {
 
   let created_at = match args.accumulate_type {
     AccumulateType::CreatedAtDate => dir_entry.path().metadata().unwrap().created().unwrap(),
@@ -84,11 +84,11 @@ fn get_accumulated_date(dir_entry: &DirEntry, args: & Args) -> Result<String, an
   let created_at: DateTime<Utc> = created_at.into();
   let created_at = created_at.format("%Y-%m-%d").to_string();
 
-  anyhow::Ok(created_at)
+  Ok(created_at)
 }
 
 
-fn flat_directory_organize(args: & Args) -> Result<(), anyhow::Error> {
+fn flat_directory_organize(args: & Args) -> Result<()> {
   // Iterate through paths and move folders to date folders
   let paths = fs::read_dir(args.directory.clone()).unwrap();
   for dir_entry in paths.flatten() {
@@ -114,25 +114,25 @@ fn flat_directory_organize(args: & Args) -> Result<(), anyhow::Error> {
         io::stdout().flush().unwrap();
       }
       if let Err(err) = fs::create_dir(new_parent.clone()) {
-        return Err(anyhow!("create_dir err: {}", err));
+        return Err(eyre!("create_dir err: {}", err));
       }
     }
 
     let new_path = new_parent.join(&file_name);
 
     if let Err(err) =  fs::rename(dir_entry.path(), new_path) {
-      return Err(anyhow!("rename file err: {}", err));
+      return Err(eyre!("rename file err: {}", err));
     }
     if !args.silent {
       print!(".");
       io::stdout().flush().unwrap();
     }
   }
-  anyhow::Ok(())
+  Ok(())
 }
 
 
-fn recursive_directory_organize(args: & Args) -> Result<(), anyhow::Error>  {
+fn recursive_directory_organize(args: & Args) -> Result<()>  {
   let mut visited_paths = HashSet::new();
   // Iterate through paths and move folders to date folders
   let paths = fs::read_dir(args.directory.clone()).unwrap();
@@ -169,13 +169,13 @@ fn recursive_directory_organize(args: & Args) -> Result<(), anyhow::Error>  {
       let new_parent = Path::new(&parent).join(new_dir_name);
       if !new_parent.exists() {
         if let Err(err) = fs::create_dir(new_parent.clone()) {
-          return Err(anyhow!("create_dir err: {}", err));
+          return Err(eyre!("create_dir err: {}", err));
         }
       }
 
       let new_path = new_parent.join(&file_name);
       if let Err(err) =  fs::rename(de.path(), new_path) {
-        return Err(anyhow!("rename file err: {}", err));
+        return Err(eyre!("rename file err: {}", err));
       }
       if !args.silent {
         print!(".");
@@ -183,7 +183,7 @@ fn recursive_directory_organize(args: & Args) -> Result<(), anyhow::Error>  {
       }
     }
     if let Err(err) = fs::remove_dir(dir_entry.path()) {
-      return Err(anyhow!("remove_dir err: {}", err));
+      return Err(eyre!("remove_dir err: {}", err));
     }
   }
   

@@ -1,7 +1,7 @@
 use crate::prepend_date;
 use crate::folder_accumulate;
 use crate::utils::string_to_args;
-use anyhow::{Context, Result};
+use eyre::{Result, WrapErr};
 use clap::Parser;
 
 #[derive(clap::ValueEnum, Clone, Debug)]
@@ -27,7 +27,7 @@ fn read_commands() -> Result<Args> {
     std::io::stdin().read_line(&mut buffer)?;
     let strings = string_to_args(&buffer);
     match Args::try_parse_from(strings.iter()) {
-        Ok(args) => anyhow::Ok(args),
+        Ok(args) => Ok(args),
         Err(err) => {
             err.print()?;
             read_commands()
@@ -35,7 +35,7 @@ fn read_commands() -> Result<Args> {
     }
 }
 
-pub fn run_cli() -> Result<(), anyhow::Error> {
+pub fn run_cli() -> Result<()> {
     // if we want to read from executable invocation
     //let mut args = Args::parse();
 
@@ -43,25 +43,25 @@ pub fn run_cli() -> Result<(), anyhow::Error> {
     println!("** Default \"folder-accumulate\" **");
     let mut args = read_commands()?;
     while !args.quit {
-        cli_execute(args).with_context(|| "command execution error".to_string())?;
+        cli_execute(args).wrap_err("cli_execute error")?;
 
         println!("** Vishvakarman: Run another command, enter '-q' to quit **");
         args = read_commands()?;
     }
-    anyhow::Ok(())
+    Ok(())
 }
 
-fn cli_execute(args: Args) -> Result<(), anyhow::Error> {
+fn cli_execute(args: Args) -> Result<()> {
     match args.function {
         Function::HelloWorld => {
             println!("Hello World");
         }
         Function::PrependDate => {
-            prepend_date::run_cli().with_context(|| "prepend_date execution error".to_string())?;
+            prepend_date::run_cli().wrap_err("prepend date error")?;
         }
         Function::FolderAccumulate => {
-            folder_accumulate::run_cli().with_context(|| "folder accumulate execution error".to_string())?;
+            folder_accumulate::run_cli().wrap_err("folder accumulate error")?;
         },
     }
-    anyhow::Ok(())
+    Ok(())
 }

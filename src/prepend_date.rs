@@ -1,6 +1,6 @@
 use crate::utils::string_to_args;
-use anyhow::{Context, Result};
 use clap::Parser;
+use eyre::{Result, WrapErr};
 
 #[derive(clap::ValueEnum, Clone, Debug)]
 enum Target {
@@ -40,19 +40,18 @@ pub fn run_cli() -> Result<()> {
     println!("Prepend Date: Enter target and directory options, run -h for more help");
     let mut args = read_commands()?;
     while !args.back {
-        prepend_date(args).with_context(|| "prepend_date execution error".to_string())?;
-
+        prepend_date(args).wrap_err("Prepend date error")?;
         println!("Prepend Date: Run again or enter '-b' to go back");
         args = read_commands()?;
     }
-    anyhow::Ok(())
+    Ok(())
 }
 
-fn prepend_date(args: Args) -> Result<(), anyhow::Error> {
+fn prepend_date(args: Args) -> Result<()> {
     let target = match args.target {
         Target::Files => "files",
         Target::Directories => "directories",
     };
     println!("Target is : {}", target);
-    anyhow::Ok(())
+    Ok(())
 }
