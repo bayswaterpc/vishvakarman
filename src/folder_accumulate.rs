@@ -26,6 +26,9 @@ struct Args {
 
     #[clap(long, short, value_parser, default_value_t = false)]
     recursive: bool,
+    
+    #[clap(long, short, value_parser, default_value_t = false)]
+    silent: bool,
 
     /// set to true to quit
     #[clap(long, short, value_parser, default_value_t = false)]
@@ -106,8 +109,10 @@ fn flat_directory_organize(args: & Args) -> Result<(), anyhow::Error> {
 
     if !new_parent.exists() {
 
-      print!("\n*** Creating and moving folders into : {}", new_parent.as_os_str().to_str().unwrap());
-      io::stdout().flush().unwrap();
+      if !args.silent {
+        print!("\n*** Creating and moving folders into : {}", new_parent.as_os_str().to_str().unwrap());
+        io::stdout().flush().unwrap();
+      }
       if let Err(err) = fs::create_dir(new_parent.clone()) {
         return Err(anyhow!("create_dir err: {}", err));
       }
@@ -118,8 +123,10 @@ fn flat_directory_organize(args: & Args) -> Result<(), anyhow::Error> {
     if let Err(err) =  fs::rename(dir_entry.path(), new_path) {
       return Err(anyhow!("rename file err: {}", err));
     }
-    print!(".");
-    io::stdout().flush().unwrap();
+    if !args.silent {
+      print!(".");
+      io::stdout().flush().unwrap();
+    }
   }
   anyhow::Ok(())
 }
@@ -136,13 +143,13 @@ fn recursive_directory_organize(args: & Args) -> Result<(), anyhow::Error>  {
 
     let parent = String::from(dir_entry.path().parent().unwrap().as_os_str().to_str().unwrap());
     let orig_dir_name = String::from(dir_entry.path().file_name().unwrap().to_str().unwrap());
-    println!("\norig_dir_name {}", orig_dir_name);
-    println!("visited_paths {:?}", visited_paths);
     if visited_paths.contains(&orig_dir_name) {
       continue;
     }
-    print!("\n*** Creating and Moving directories for : {}", orig_dir_name);
-    io::stdout().flush().unwrap();
+    if !args.silent {
+      print!("\n*** Creating and Moving directories for : {}", orig_dir_name);
+      io::stdout().flush().unwrap();
+    }
 
     let sub_dir_paths = fs::read_dir(dir_entry.path()).unwrap();
     for de in sub_dir_paths.flatten() {
@@ -170,8 +177,10 @@ fn recursive_directory_organize(args: & Args) -> Result<(), anyhow::Error>  {
       if let Err(err) =  fs::rename(de.path(), new_path) {
         return Err(anyhow!("rename file err: {}", err));
       }
-      print!(".");
-      io::stdout().flush().unwrap();
+      if !args.silent {
+        print!(".");
+        io::stdout().flush().unwrap();
+      }
     }
     if let Err(err) = fs::remove_dir(dir_entry.path()) {
       return Err(anyhow!("remove_dir err: {}", err));
