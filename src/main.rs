@@ -1,9 +1,9 @@
 mod cli;
+mod folder_accumulate;
 mod prepend_date;
 mod utils;
-mod folder_accumulate;
-use eyre::{Result, WrapErr};
 use cli::run_cli;
+use eyre::{Result, WrapErr};
 
 fn main() -> Result<()> {
     run_cli().wrap_err("Run CLI error")?;

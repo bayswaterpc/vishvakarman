@@ -1,8 +1,8 @@
-use crate::prepend_date;
 use crate::folder_accumulate;
+use crate::prepend_date;
 use crate::utils::string_to_args;
-use eyre::{Result, WrapErr};
 use clap::Parser;
+use eyre::{Result, WrapErr};
 
 #[derive(clap::ValueEnum, Clone, Debug)]
 enum Function {
@@ -31,7 +31,7 @@ fn read_commands() -> Result<Args> {
         Err(err) => {
             err.print()?;
             read_commands()
-        },
+        }
     }
 }
 
@@ -61,7 +61,7 @@ fn cli_execute(args: Args) -> Result<()> {
         }
         Function::FolderAccumulate => {
             folder_accumulate::run_cli().wrap_err("folder accumulate error")?;
-        },
+        }
     }
     Ok(())
 }

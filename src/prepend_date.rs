@@ -30,7 +30,7 @@ fn read_commands() -> Result<Args> {
         Err(err) => {
             err.print()?;
             read_commands()
-        },
+        }
     }
 }
 
