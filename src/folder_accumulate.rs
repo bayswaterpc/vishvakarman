@@ -58,7 +58,9 @@ fn get_default_file_split_map() -> HashMap<String, String> {
     let default_file_labels = get_default_file_labels();
     let mut file_map_split: HashMap<String, String> = HashMap::new();
     default_file_labels.iter().for_each(|(lbl, files)| {
-      files.iter().for_each(|f| {file_map_split.insert(lbl.clone(), f.clone());})
+        files.iter().for_each(|f| {
+            file_map_split.insert(lbl.clone(), f.clone());
+        })
     });
     file_map_split
 }
@@ -124,6 +126,7 @@ fn get_accumulated_date(dir_entry: &DirEntry, args: &Args) -> Result<String> {
 }
 
 fn flat_directory_organize(args: &Args) -> Result<()> {
+    let file_map_split = get_default_file_split_map();
     // Iterate through paths and move folders to date folders
     let paths = fs::read_dir(args.directory.clone()).unwrap();
     for dir_entry in paths.flatten() {
@@ -147,7 +150,25 @@ fn flat_directory_organize(args: &Args) -> Result<()> {
                 .to_str()
                 .unwrap(),
         );
-        let new_parent = Path::new(&parent).join(created_at);
+
+        let new_parent = if args.file_type_split {
+            let extension = String::from(
+                dir_entry
+                    .path()
+                    .parent()
+                    .unwrap()
+                    .as_os_str()
+                    .to_str()
+                    .unwrap(),
+            );
+            let sub_dir = match file_map_split.get(&extension)   {
+                Some(subdir) => subdir.clone(),
+                None => "misc".to_string(),
+            };
+            Path::new(&parent).join(sub_dir).join(created_at)
+        } else {
+            Path::new(&parent).join(created_at)
+        };
 
         if !new_parent.exists() {
             if !args.silent {
