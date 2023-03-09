@@ -36,9 +36,6 @@ fn read_commands() -> Result<Args> {
 }
 
 pub fn run_cli() -> Result<()> {
-    // if we want to read from executable invocation
-    //let mut args = Args::parse();
-
     println!("* Vishvakarman: Enter function, run -h for help *");
     println!("** Default \"folder-accumulate\" **");
     let mut args = read_commands()?;

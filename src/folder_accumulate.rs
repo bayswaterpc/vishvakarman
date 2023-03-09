@@ -54,8 +54,6 @@ fn read_commands() -> Result<Args> {
 }
 
 pub fn run_cli() -> Result<()> {
-    // if we want to read from executable invocation
-    //let mut args = Args::parse();
     println!(
         "** {}: Move Files Into Created By Date Folders YYYY-MM-DD **",
         UTILITY_FUNCTION_NAME

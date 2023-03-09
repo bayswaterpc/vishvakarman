@@ -35,8 +35,6 @@ fn read_commands() -> Result<Args> {
 }
 
 pub fn run_cli() -> Result<()> {
-    // if we want to read from executable invocation
-    //let mut args = Args::parse();
     println!("Prepend Date: Enter target and directory options, run -h for more help");
     let mut args = read_commands()?;
     while !args.back {
