@@ -1,22 +1,16 @@
 mod constants;
-mod utils;
-mod organize_recursive_directory;
 mod organize_flat_directory;
+mod organize_recursive_directory;
+mod utils;
 
+use constants::UTILITY_FUNCTION_NAME;
 use organize_flat_directory::organize_flat_directory;
 use organize_recursive_directory::organize_recursive_directory;
-use constants::UTILITY_FUNCTION_NAME;
 
-use crate::utils::string_to_args;
+use crate::utils::{string_to_args, AccumulateType};
 
 use clap::Parser;
 use eyre::{Result, WrapErr};
-
-#[derive(clap::ValueEnum, Clone, Debug)]
-enum AccumulateType {
-    CreatedAtDate,
-    ModifiedAtDate,
-}
 
 #[derive(Parser, Debug)]
 pub struct Args {

@@ -1,11 +1,15 @@
 use crate::utils::string_to_args;
+use crate::utils::{get_accumulated_date, AccumulateType};
 use clap::Parser;
 use eyre::{Result, WrapErr};
+use std::collections::HashSet;
+use std::{fs, path::Path};
 
 #[derive(clap::ValueEnum, Clone, Debug)]
 enum Target {
     Files,
     Directories,
+    All,
 }
 
 #[derive(Parser, Debug)]
@@ -15,6 +19,9 @@ struct Args {
 
     #[clap(value_enum, long, short, value_parser, default_value = "")]
     directory: String,
+
+    #[clap(value_enum, long, short, value_parser, default_value_t = AccumulateType::ModifiedAtDate)]
+    accumulate_type: AccumulateType,
 
     /// set to true to quit
     #[clap(long, short, value_parser, default_value_t = false)]
@@ -49,7 +56,41 @@ fn prepend_date(args: Args) -> Result<()> {
     let target = match args.target {
         Target::Files => "files",
         Target::Directories => "directories",
+        Target::All => "all",
     };
     println!("Target is : {}", target);
+    let paths = fs::read_dir(args.directory.clone()).unwrap();
+    let mut visited_paths = HashSet::new();
+    for dir_entry in paths.flatten() {
+        let isTarget = match args.target {
+            Target::Files => !dir_entry.path().is_dir(),
+            Target::Directories => dir_entry.path().is_dir(),
+            Target::All => true,
+        };
+        if !isTarget {
+            continue;
+        }
+        let orig_dir_name = String::from(dir_entry.path().file_name().unwrap().to_str().unwrap());
+        if visited_paths.contains(&orig_dir_name) {
+            continue;
+        }
+        visited_paths.insert(orig_dir_name.clone());
+
+        let parent = String::from(
+            dir_entry
+                .path()
+                .parent()
+                .unwrap()
+                .as_os_str()
+                .to_str()
+                .unwrap(),
+        );
+
+        let created_at = get_accumulated_date(&dir_entry, &args.accumulate_type)?;
+        let new_dir_name = format!("{} - {}", created_at, orig_dir_name);
+        let new_path = Path::new(&parent).join(&new_dir_name);
+        println!("jmw renaming {:?} to {:?}", dir_entry.path(), new_path);
+        //std::fs::rename(dir_entry.path(), to);
+    }
     Ok(())
 }

@@ -1,7 +1,7 @@
 use super::{AccumulateType, Args};
 use chrono::prelude::{DateTime, Utc};
-use eyre::{ Result};
-use std::collections::{HashMap};
+use eyre::Result;
+use std::collections::HashMap;
 use std::fs::DirEntry;
 
 pub fn get_accumulated_date(dir_entry: &DirEntry, args: &Args) -> Result<String> {
@@ -14,7 +14,6 @@ pub fn get_accumulated_date(dir_entry: &DirEntry, args: &Args) -> Result<String>
 
     Ok(created_at)
 }
-
 
 pub fn get_default_file_labels() -> Vec<(String, Vec<String>)> {
     let video_files = vec![".mp4", ".srt", ".xml", ".mov", "insv"];
