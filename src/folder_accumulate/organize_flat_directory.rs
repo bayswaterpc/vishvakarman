@@ -1,5 +1,5 @@
-use super::constants::EXCLUDED_FILES;
 use super::Args;
+use crate::constants::EXCLUDED_FILES;
 use crate::utils::{get_accumulated_date, get_default_file_split_map};
 
 use eyre::{eyre, Result};
@@ -16,7 +16,7 @@ pub fn organize_flat_directory(args: &Args) -> Result<()> {
             continue;
         }
         let file_name = String::from(dir_entry.path().file_name().unwrap().to_str().unwrap());
-        // Mac Specific file elimination
+
         if EXCLUDED_FILES.contains(&file_name.as_str()) {
             continue;
         }

@@ -1,7 +1,9 @@
 mod cli;
+mod constants;
 mod folder_accumulate;
 mod prepend_date;
 mod utils;
+
 use cli::run_cli;
 use eyre::{Result, WrapErr};
 

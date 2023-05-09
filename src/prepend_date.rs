@@ -1,3 +1,4 @@
+use crate::constants::EXCLUDED_FILES;
 use crate::utils::string_to_args;
 use crate::utils::{get_accumulated_date, AccumulateType};
 use clap::Parser;
@@ -17,10 +18,10 @@ struct Args {
     #[clap(value_enum, long, short, value_parser, default_value_t=Target::Directories)]
     target: Target,
 
-    #[clap(value_enum, long, short, value_parser, default_value = "")]
+    #[clap(value_enum, long, short, value_parser, default_value = "./")]
     directory: String,
 
-    #[clap(value_enum, long, short, value_parser, default_value_t = AccumulateType::ModifiedAtDate)]
+    #[clap(value_enum, long, short, value_parser, default_value_t = AccumulateType::Created)]
     accumulate_type: AccumulateType,
 
     /// set to true to quit
@@ -62,19 +63,22 @@ fn prepend_date(args: Args) -> Result<()> {
     let paths = fs::read_dir(args.directory.clone()).unwrap();
     let mut visited_paths = HashSet::new();
     for dir_entry in paths.flatten() {
-        let isTarget = match args.target {
+        let is_target = match args.target {
             Target::Files => !dir_entry.path().is_dir(),
             Target::Directories => dir_entry.path().is_dir(),
             Target::All => true,
         };
-        if !isTarget {
+        if !is_target {
             continue;
         }
-        let orig_dir_name = String::from(dir_entry.path().file_name().unwrap().to_str().unwrap());
-        if visited_paths.contains(&orig_dir_name) {
+        let dir_entry_name = String::from(dir_entry.path().file_name().unwrap().to_str().unwrap());
+        if visited_paths.contains(&dir_entry_name)
+            || EXCLUDED_FILES.contains(&dir_entry_name.as_str())
+        {
             continue;
         }
-        visited_paths.insert(orig_dir_name.clone());
+
+        visited_paths.insert(dir_entry_name.clone());
 
         let parent = String::from(
             dir_entry
@@ -87,10 +91,9 @@ fn prepend_date(args: Args) -> Result<()> {
         );
 
         let created_at = get_accumulated_date(&dir_entry, &args.accumulate_type)?;
-        let new_dir_name = format!("{} - {}", created_at, orig_dir_name);
+        let new_dir_name = format!("{} - {}", created_at, dir_entry_name);
         let new_path = Path::new(&parent).join(&new_dir_name);
-        println!("jmw renaming {:?} to {:?}", dir_entry.path(), new_path);
-        //std::fs::rename(dir_entry.path(), to);
+        std::fs::rename(dir_entry.path(), new_path).expect("Should have successfully renamed")
     }
     Ok(())
 }

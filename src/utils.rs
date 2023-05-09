@@ -1,5 +1,4 @@
 use chrono::prelude::{DateTime, Utc};
-use clap;
 use eyre::Result;
 use std::collections::HashMap;
 use std::ffi::OsString;
@@ -7,8 +6,8 @@ use std::fs::DirEntry;
 
 #[derive(clap::ValueEnum, Clone, Debug)]
 pub enum AccumulateType {
-    CreatedAtDate,
-    ModifiedAtDate,
+    Created,
+    Modified,
 }
 
 pub fn get_accumulated_date(
@@ -16,8 +15,8 @@ pub fn get_accumulated_date(
     accumulate_type: &AccumulateType,
 ) -> Result<String> {
     let created_at = match accumulate_type {
-        AccumulateType::CreatedAtDate => dir_entry.path().metadata().unwrap().created().unwrap(),
-        AccumulateType::ModifiedAtDate => dir_entry.path().metadata().unwrap().modified().unwrap(),
+        AccumulateType::Created => dir_entry.path().metadata().unwrap().created().unwrap(),
+        AccumulateType::Modified => dir_entry.path().metadata().unwrap().modified().unwrap(),
     };
     let created_at: DateTime<Utc> = created_at.into();
     let created_at = created_at.format("%Y-%m-%d").to_string();

@@ -1,9 +1,7 @@
-mod constants;
 mod organize_flat_directory;
 mod organize_recursive_directory;
-mod utils;
 
-use constants::UTILITY_FUNCTION_NAME;
+use crate::constants::UTILITY_FUNCTION_NAME;
 use organize_flat_directory::organize_flat_directory;
 use organize_recursive_directory::organize_recursive_directory;
 
@@ -17,7 +15,7 @@ pub struct Args {
     #[clap(value_enum, long, short, value_parser, default_value = "./")]
     directory: String,
 
-    #[clap(value_enum, long, short, value_parser, default_value_t = AccumulateType::ModifiedAtDate)]
+    #[clap(value_enum, long, short, value_parser, default_value_t = AccumulateType::Modified)]
     accumulate_type: AccumulateType,
 
     #[clap(long, short, value_parser, default_value_t = false)]
