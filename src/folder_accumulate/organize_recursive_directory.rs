@@ -1,8 +1,8 @@
-use super::utils::{ get_default_file_split_map, get_accumulated_date};
 use super::Args;
-use super::constants::EXCLUDED_FILES;
+use crate::constants::EXCLUDED_FILES;
+use crate::utils::{get_accumulated_date, get_default_file_split_map};
 
-use std::collections::{HashSet};
+use std::collections::HashSet;
 
 use eyre::{eyre, Result};
 use std::io;
@@ -20,6 +20,10 @@ pub fn organize_recursive_directory(args: &Args) -> Result<()> {
         if dir_entry.path().is_file() {
             continue;
         }
+        let orig_dir_name = String::from(dir_entry.path().file_name().unwrap().to_str().unwrap());
+        if visited_paths.contains(&orig_dir_name) {
+            continue;
+        }
 
         let parent = String::from(
             dir_entry
@@ -30,10 +34,7 @@ pub fn organize_recursive_directory(args: &Args) -> Result<()> {
                 .to_str()
                 .unwrap(),
         );
-        let orig_dir_name = String::from(dir_entry.path().file_name().unwrap().to_str().unwrap());
-        if visited_paths.contains(&orig_dir_name) {
-            continue;
-        }
+
         if !args.silent {
             print!(
                 "\n*** Creating and Moving directories for : {}",
@@ -54,7 +55,7 @@ pub fn organize_recursive_directory(args: &Args) -> Result<()> {
                 continue;
             }
 
-            let created_at = get_accumulated_date(&de, args)?;
+            let created_at = get_accumulated_date(&de, &args.accumulate_type)?;
             let new_dir_name = format!("{} {}", created_at, orig_dir_name);
             visited_paths.insert(new_dir_name.clone());
             let new_parent = Path::new(&parent).join(new_dir_name);

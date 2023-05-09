@@ -1,12 +1,11 @@
-use super::constants::EXCLUDED_FILES;
-use super::utils::{get_default_file_split_map, get_accumulated_date};
 use super::Args;
+use crate::constants::EXCLUDED_FILES;
+use crate::utils::{get_accumulated_date, get_default_file_split_map};
 
 use eyre::{eyre, Result};
 use std::io;
 use std::io::Write; // <--- bring flush() into scope
 use std::{fs, path::Path};
-
 
 pub fn organize_flat_directory(args: &Args) -> Result<()> {
     let file_map_split = get_default_file_split_map();
@@ -17,12 +16,12 @@ pub fn organize_flat_directory(args: &Args) -> Result<()> {
             continue;
         }
         let file_name = String::from(dir_entry.path().file_name().unwrap().to_str().unwrap());
-        // Mac Specific file elimination
+
         if EXCLUDED_FILES.contains(&file_name.as_str()) {
             continue;
         }
 
-        let created_at = get_accumulated_date(&dir_entry, args)?;
+        let created_at = get_accumulated_date(&dir_entry, &args.accumulate_type)?;
 
         let parent = String::from(
             dir_entry
@@ -44,7 +43,7 @@ pub fn organize_flat_directory(args: &Args) -> Result<()> {
                     .to_str()
                     .unwrap(),
             );
-            let sub_dir = match file_map_split.get(&extension)   {
+            let sub_dir = match file_map_split.get(&extension) {
                 Some(subdir) => subdir.clone(),
                 None => "misc".to_string(),
             };
