@@ -4,7 +4,9 @@ use crate::utils::{get_accumulated_date, AccumulateType};
 use clap::Parser;
 use eyre::{Result, WrapErr};
 use std::collections::HashSet;
-use std::{fs, path::Path};
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::env;
 
 #[derive(clap::ValueEnum, Clone, Debug)]
 enum Target {
@@ -13,6 +15,9 @@ enum Target {
     All,
 }
 
+fn get_current_working_dir() -> std::io::Result<PathBuf> {
+    env::current_dir()
+}
 #[derive(Parser, Debug)]
 struct Args {
     #[clap(value_enum, long, short, value_parser, default_value_t=Target::Directories)]
@@ -44,6 +49,7 @@ fn read_commands() -> Result<Args> {
 
 pub fn run_cli() -> Result<()> {
     println!("Prepend Date: Enter target and directory options, run -h for more help");
+    println!("Current working directory is: {:?}", get_current_working_dir()?);
     let mut args = read_commands()?;
     while !args.back {
         prepend_date(args).wrap_err("Prepend date error")?;
