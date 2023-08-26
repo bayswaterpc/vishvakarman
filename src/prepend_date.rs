@@ -84,7 +84,6 @@ fn prepend_date(args: Args) -> Result<()> {
             continue;
         }
 
-        visited_paths.insert(dir_entry_name.clone());
 
         let parent = String::from(
             dir_entry
@@ -98,6 +97,7 @@ fn prepend_date(args: Args) -> Result<()> {
 
         let created_at = get_accumulated_date(&dir_entry, &args.accumulate_type)?;
         let new_dir_name = format!("{} - {}", created_at, dir_entry_name);
+        visited_paths.insert(new_dir_name.clone());
         let new_path = Path::new(&parent).join(&new_dir_name);
         std::fs::rename(dir_entry.path(), new_path).expect("Should have successfully renamed")
     }
